@@ -1,6 +1,0 @@
-actor actor_operator {
-  name "Operator"
-  description "Person using the starter application"
-
-  status active
-}

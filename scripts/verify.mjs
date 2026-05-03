@@ -25,7 +25,7 @@ const projectRoot = path.join(workRoot, "consumer");
 fs.mkdirSync(projectRoot, { recursive: true });
 fs.cpSync(path.join(root, "test-project-topogram"), path.join(projectRoot, "topogram"), { recursive: true });
 fs.copyFileSync(path.join(root, "test-project-topogram.project.json"), path.join(projectRoot, "topogram.project.json"));
-writeJson(path.join(projectRoot, "package.json"), { name: "topogram-generator-sveltekit-web-consumer", private: true, type: "module", devDependencies: { "@attebury/topogram": cliDependencySpec, "@attebury/topogram-generator-sveltekit-web": `file:${generatorTarball}`, "@attebury/topogram-generator-hono-api": "^0.2.0", "@attebury/topogram-generator-postgres-db": "^0.1.0" } });
+writeJson(path.join(projectRoot, "package.json"), { name: "topogram-generator-sveltekit-web-consumer", private: true, type: "module", devDependencies: { "@attebury/topogram": cliDependencySpec, "@attebury/topogram-generator-sveltekit-web": `file:${generatorTarball}` } });
 writeNpmrc(projectRoot);
 console.log("Installing consumer dependencies...");
 run("npm", ["install"], { cwd: projectRoot, quiet: true });

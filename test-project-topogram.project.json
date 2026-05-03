@@ -17,31 +17,7 @@
           "version": "1",
           "package": "@attebury/topogram-generator-sveltekit-web"
         },
-        "port": 5173,
-        "api": "app_api"
-      },
-      {
-        "id": "app_api",
-        "type": "api",
-        "projection": "proj_api",
-        "generator": {
-          "id": "@attebury/topogram-generator-hono-api",
-          "version": "1",
-          "package": "@attebury/topogram-generator-hono-api"
-        },
-        "port": 3000,
-        "database": "app_postgres"
-      },
-      {
-        "id": "app_postgres",
-        "type": "database",
-        "projection": "proj_db_postgres",
-        "generator": {
-          "id": "@attebury/topogram-generator-postgres-db",
-          "version": "1",
-          "package": "@attebury/topogram-generator-postgres-db"
-        },
-        "port": 5432
+        "port": 5173
       }
     ]
   }
