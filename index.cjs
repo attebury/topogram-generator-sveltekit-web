@@ -34,6 +34,85 @@ function contractRoutes(contract) {
   return routed.filter((route) => route.id && route.route);
 }
 
+function statementsArray(graph) {
+  if (Array.isArray(graph?.statements)) return graph.statements;
+  return Object.values(graph?.statements || {});
+}
+
+function projectionCandidates(graph) {
+  return [
+    ...(Array.isArray(graph?.byKind?.projection) ? graph.byKind.projection : []),
+    ...statementsArray(graph).filter((statement) => statement.kind === "projection")
+  ];
+}
+
+function apiProjectionForContext(context) {
+  const topologyApiId = context.component?.apiComponent?.projection?.id || context.component?.apiProjectionId || null;
+  const projections = projectionCandidates(context.graph || {});
+  if (topologyApiId) {
+    const match = projections.find((projection) => projection.id === topologyApiId && Array.isArray(projection.http));
+    if (match) return match;
+  }
+  return projections.find((projection) => Array.isArray(projection.http) && projection.http.length > 0) || null;
+}
+
+function fieldTransport(field) {
+  const location = field.location || field.in || field.transport?.location || "body";
+  return {
+    name: field.name || field.field || field.sourceName,
+    sourceName: field.sourceName || field.name || field.field,
+    required: Boolean(field.required),
+    schema: field.schema || { type: "string" },
+    transport: {
+      location,
+      wireName: field.wireName || field.as || field.transport?.wireName || field.name || field.field
+    }
+  };
+}
+
+function splitTransport(fields) {
+  const output = { path: [], query: [], header: [], body: [] };
+  for (const field of fields.map(fieldTransport).filter((item) => item.name)) {
+    const location = output[field.transport.location] ? field.transport.location : "body";
+    output[location].push(field);
+  }
+  return output;
+}
+
+function apiContractsForContext(context) {
+  const existing = context.contracts?.api;
+  if (existing && Object.keys(existing).length > 0) return existing;
+  const server = context.contracts?.server;
+  if (server && Array.isArray(server.routes)) {
+    return Object.fromEntries(server.routes.map((route) => [route.capabilityId, {
+      capability: { id: route.capabilityId },
+      endpoint: { method: route.method, path: route.path, successStatus: route.successStatus },
+      requestContract: route.requestContract || null,
+      responseContract: route.responseContract || null
+    }]).filter(([id]) => id));
+  }
+  const projection = apiProjectionForContext(context);
+  if (!projection) return {};
+  const fields = Array.isArray(projection.httpFields) ? projection.httpFields : [];
+  return Object.fromEntries((projection.http || []).map((route) => {
+    const capabilityId = route.capabilityId || route.capability?.id;
+    const routeFields = fields.filter((field) => (field.capabilityId || field.capability?.id) === capabilityId && (field.direction || field.contract || "input") === "input");
+    return [capabilityId, {
+      capability: { id: capabilityId },
+      endpoint: {
+        method: route.method || "GET",
+        path: route.path || "/",
+        successStatus: route.success || route.successStatus || 200
+      },
+      requestContract: {
+        fields: routeFields.map(fieldTransport).filter((item) => item.name),
+        transport: splitTransport(routeFields)
+      },
+      responseContract: null
+    }];
+  }).filter(([id]) => id));
+}
+
 function sampleItemsForScreen(screen) {
   const title = screen?.title || screen?.id || "Resource";
   return [
@@ -498,7 +577,7 @@ function generate(context) {
     "src/app.d.ts": "declare global { namespace App {} }\n\nexport {};\n",
     "src/routes/+layout.svelte": renderLayout(brand, routes),
     "src/routes/+page.svelte": renderHomePage(contract, routes),
-    "src/lib/topogram/api-contracts.json": `${JSON.stringify(context.contracts?.api || {}, null, 2)}\n`,
+    "src/lib/topogram/api-contracts.json": `${JSON.stringify(apiContractsForContext(context), null, 2)}\n`,
     "src/lib/topogram/ui-web-contract.json": `${JSON.stringify(contract, null, 2)}\n`
   };
   if (hasImplementationRoutes) {
