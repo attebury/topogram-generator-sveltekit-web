@@ -410,11 +410,7 @@ function renderLayout(brand, routes) {
     .filter(isNavigableRoute)
     .map((route) => `    <a href="${route.route}">${route.title}</a>`)
     .join("\n");
-  return `<script lang="ts">
-  export let data;
-</script>
-
-<svelte:head>
+  return `<svelte:head>
   <title>${brand}</title>
 </svelte:head>
 

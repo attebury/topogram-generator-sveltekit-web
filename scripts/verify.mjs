@@ -42,6 +42,8 @@ assert.equal(fs.existsSync(path.join(outputRoot, "svelte.config.js")), true, "Ex
 assert.equal(fs.existsSync(path.join(outputRoot, "src", "routes", "+layout.svelte")), true, "Expected SvelteKit layout");
 assert.equal(fs.existsSync(path.join(outputRoot, "src", "routes", "+page.svelte")), true, "Expected SvelteKit home page");
 assert.equal(fs.existsSync(path.join(outputRoot, "src", "lib", "topogram", "generation-coverage.json")), true, "Expected generation coverage artifact");
+const generatedLayout = fs.readFileSync(path.join(outputRoot, "src", "routes", "+layout.svelte"), "utf8");
+assert.doesNotMatch(generatedLayout, /export let data/, "Layout should not export unused data");
 const generatedPackage = JSON.parse(fs.readFileSync(path.join(outputRoot, "package.json"), "utf8"));
 assert.equal(generatedPackage.scripts.check, "svelte-kit sync && tsc --noEmit");
 assert.equal(generatedPackage.dependencies["@sveltejs/kit"], "^2.9.0");
@@ -69,6 +71,7 @@ const dynamicRouteOutput = adapter.default.generate({
   }
 });
 assert.match(dynamicRouteOutput.files["src/routes/tasks/[id]/edit/+page.svelte"], /Edit Task/);
+assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+layout.svelte"], /export let data/);
 assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+layout.svelte"], /tasks\/:id/);
 assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+layout.svelte"], /Edit Task/);
 assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+page.svelte"], /tasks\/:id/);
