@@ -46,6 +46,33 @@ const generatedPackage = JSON.parse(fs.readFileSync(path.join(outputRoot, "packa
 assert.equal(generatedPackage.scripts.check, "svelte-kit sync && tsc --noEmit");
 assert.equal(generatedPackage.dependencies["@sveltejs/kit"], "^2.9.0");
 assert.equal(generatedPackage.devDependencies["@types/node"], "^22.10.2");
+const adapter = await import(path.join(root, "index.cjs"));
+const dynamicRouteOutput = adapter.default.generate({
+  projection: { id: "proj_ui_web" },
+  contracts: {
+    uiWeb: {
+      projection: { id: "proj_ui_web" },
+      appShell: { brand: "Regression" },
+      screens: [
+        { id: "task_list", title: "Tasks", route: "/tasks" },
+        { id: "task_detail", title: "Task Details", route: "/tasks/:id" },
+        { id: "task_edit", title: "Edit Task", route: "/tasks/:id/edit" }
+      ],
+      navigation: {
+        items: [
+          { screenId: "task_list", label: "Tasks" },
+          { screenId: "task_detail", label: "Task Details" },
+          { screenId: "task_edit", label: "Edit Task" }
+        ]
+      }
+    }
+  }
+});
+assert.match(dynamicRouteOutput.files["src/routes/tasks/[id]/edit/+page.svelte"], /Edit Task/);
+assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+layout.svelte"], /tasks\/:id/);
+assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+layout.svelte"], /Edit Task/);
+assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+page.svelte"], /tasks\/:id/);
+assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+page.svelte"], /Edit Task/);
 console.log("Package-backed @attebury/topogram-generator-sveltekit-web smoke passed.");
 
 function run(command, args, options = {}) { const result = childProcess.spawnSync(command, args, { cwd: options.cwd || root, encoding: "utf8", env: { ...process.env, npm_config_cache: npmCache, PATH: process.env.PATH || "" } }); if (result.status !== 0) throw new Error([ `Command failed: ${command} ${args.join(" ")}`, result.stdout, result.stderr ].filter(Boolean).join("\n")); if (!options.quiet && result.stdout) process.stdout.write(result.stdout); if (!options.quiet && result.stderr) process.stderr.write(result.stderr); return result; }
