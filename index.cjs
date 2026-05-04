@@ -212,24 +212,28 @@ function renderApiClientModule(webReference, defaultApiBaseUrl) {
   const caps = webReference.client?.capabilityIds || {};
   const extra = Array.isArray(webReference.client?.extraFunctions) ? webReference.client.extraFunctions : [];
   const wrappers = [];
-  if (fns.list && caps.list) wrappers.push(`export const ${fns.list} = (fetcher: Fetcher, input: Record<string, unknown> = {}) => requestCapability(fetcher, "${caps.list}", input);`);
-  if (fns.get && caps.get) wrappers.push(`export const ${fns.get} = (fetcher: Fetcher, ${primaryParam}: string) => requestCapability(fetcher, "${caps.get}", { ${primaryParam} });`);
-  if (fns.create && caps.create) wrappers.push(`export const ${fns.create} = (fetcher: Fetcher, input: Record<string, unknown>) => requestCapability(fetcher, "${caps.create}", input);`);
-  if (fns.update && caps.update) wrappers.push(`export const ${fns.update} = (fetcher: Fetcher, ${primaryParam}: string, input: Record<string, unknown>) => requestCapability(fetcher, "${caps.update}", { ...input, ${primaryParam} });`);
-  if (fns.terminal && caps.terminal) wrappers.push(`export const ${fns.terminal} = (fetcher: Fetcher, ${primaryParam}: string, input: Record<string, unknown> = {}) => requestCapability(fetcher, "${caps.terminal}", { ...input, ${primaryParam} });`);
+  if (fns.list && caps.list) wrappers.push(`export const ${fns.list} = (fetcher: Fetcher, input: Record<string, unknown> = {}, _options?: unknown) => requestCapability(fetcher, "${caps.list}", input);`);
+  if (fns.get && caps.get) wrappers.push(`export const ${fns.get} = (fetcher: Fetcher, ${primaryParam}: string, _options?: unknown) => requestCapability(fetcher, "${caps.get}", { ${primaryParam} });`);
+  if (fns.create && caps.create) wrappers.push(`export const ${fns.create} = (fetcher: Fetcher, input: Record<string, unknown>, _options?: unknown) => requestCapability(fetcher, "${caps.create}", input);`);
+  if (fns.update && caps.update) wrappers.push(`export const ${fns.update} = (fetcher: Fetcher, ${primaryParam}: string, input: Record<string, unknown>, _options?: unknown) => requestCapability(fetcher, "${caps.update}", { ...input, ${primaryParam} });`);
+  if (fns.terminal && caps.terminal) wrappers.push(`export const ${fns.terminal} = (fetcher: Fetcher, ${primaryParam}: string, input: Record<string, unknown> = {}, _options?: unknown) => requestCapability(fetcher, "${caps.terminal}", { ...input, ${primaryParam} });`);
   for (const entry of extra) {
     if (!entry?.name || !entry?.capabilityId) continue;
     if (entry.primaryParam) {
-      wrappers.push(`export const ${entry.name} = (fetcher: Fetcher, ${entry.primaryParam}: string, input: Record<string, unknown> = {}) => requestCapability(fetcher, "${entry.capabilityId}", { ...input, ${entry.primaryParam} });`);
+      wrappers.push(`export const ${entry.name} = (fetcher: Fetcher, ${entry.primaryParam}: string, input: Record<string, unknown> = {}, _options?: unknown) => requestCapability(fetcher, "${entry.capabilityId}", { ...input, ${entry.primaryParam} });`);
     } else {
-      wrappers.push(`export const ${entry.name} = (fetcher: Fetcher, input: Record<string, unknown> = {}) => requestCapability(fetcher, "${entry.capabilityId}", input);`);
+      wrappers.push(`export const ${entry.name} = (fetcher: Fetcher, input: Record<string, unknown> = {}, _options?: unknown) => requestCapability(fetcher, "${entry.capabilityId}", input);`);
     }
   }
   return `import { env as publicEnv } from "$env/dynamic/public";
-import apiContracts from "$lib/topogram/api-contracts.json";
+import rawApiContracts from "$lib/topogram/api-contracts.json";
 
 type Fetcher = typeof fetch;
-type ApiContract = (typeof apiContracts)[keyof typeof apiContracts];
+type ApiContract = {
+  endpoint: { path: string; method?: string };
+  requestContract?: { transport?: { path?: Array<{ name: string; transport: { wireName: string } }>; query?: Array<{ name: string; transport: { wireName: string } }> } };
+};
+const apiContracts = rawApiContracts as Record<string, ApiContract>;
 
 function apiBase() { return publicEnv.PUBLIC_TOPOGRAM_API_BASE_URL || "${defaultApiBaseUrl}"; }
 
@@ -247,8 +251,9 @@ function buildPath(contract: ApiContract, input: Record<string, unknown>) {
   return query ? \`\${path}?\${query}\` : path;
 }
 
-export async function requestCapability(fetcher: Fetcher, capabilityId: keyof typeof apiContracts, input: Record<string, unknown> = {}) {
-  const contract = apiContracts[capabilityId] as ApiContract;
+export async function requestCapability(fetcher: Fetcher, capabilityId: string, input: Record<string, unknown> = {}) {
+  const contract = apiContracts[capabilityId];
+  if (!contract) throw new Error(\`Missing API contract for capability: \${capabilityId}\`);
   const method = contract.endpoint.method || "GET";
   const headers = new Headers();
   const token = publicEnv.PUBLIC_TOPOGRAM_AUTH_TOKEN || "";
