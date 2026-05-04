@@ -239,11 +239,11 @@ function apiBase() { return publicEnv.PUBLIC_TOPOGRAM_API_BASE_URL || "${default
 
 function buildPath(contract: ApiContract, input: Record<string, unknown>) {
   let path = contract.endpoint.path;
-  for (const field of contract.requestContract?.transport.path || []) {
+  for (const field of contract.requestContract?.transport?.path || []) {
     path = path.replace(\`:\${field.transport.wireName}\`, encodeURIComponent(String(input[field.name] ?? "")));
   }
   const params = new URLSearchParams();
-  for (const field of contract.requestContract?.transport.query || []) {
+  for (const field of contract.requestContract?.transport?.query || []) {
     const value = input[field.name];
     if (value !== undefined && value !== null && value !== "") params.set(field.transport.wireName, String(value));
   }
