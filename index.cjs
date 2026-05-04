@@ -279,11 +279,17 @@ function currentUser(debug?: VisibilityDebug | null) {
   return debug?.userId || publicEnv.PUBLIC_TOPOGRAM_AUTH_USER_ID || "";
 }
 
+function hasDebugUser(debug?: VisibilityDebug | null) {
+  return Boolean(debug?.userId);
+}
+
 function currentPermissions(debug?: VisibilityDebug | null) {
-  return String(debug?.permissions || publicEnv.PUBLIC_TOPOGRAM_AUTH_PERMISSIONS || "").split(/[\\s,]+/).filter(Boolean);
+  const permissions = hasDebugUser(debug) ? debug?.permissions : (debug?.permissions || publicEnv.PUBLIC_TOPOGRAM_AUTH_PERMISSIONS);
+  return String(permissions || "").split(/[\\s,]+/).filter(Boolean);
 }
 
 function isAdmin(debug?: VisibilityDebug | null) {
+  if (hasDebugUser(debug)) return truthy(debug?.isAdmin) || currentPermissions(debug).includes("*");
   return truthy(debug?.isAdmin) || truthy(publicEnv.PUBLIC_TOPOGRAM_AUTH_ADMIN) || currentPermissions(debug).includes("*");
 }
 
