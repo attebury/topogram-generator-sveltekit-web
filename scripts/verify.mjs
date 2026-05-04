@@ -38,6 +38,13 @@ run(topogramBin, ["generate"], { cwd: projectRoot });
 const outputRoot = path.join(projectRoot, "app", "apps", "web", "app_sveltekit");
 assert.equal(fs.existsSync(path.join(projectRoot, "app", ".topogram-generated.json")), true);
 assert.equal(fs.existsSync(path.join(outputRoot, "package.json")), true, `Expected generated package.json`);
+assert.equal(fs.existsSync(path.join(outputRoot, "svelte.config.js")), true, "Expected SvelteKit config");
+assert.equal(fs.existsSync(path.join(outputRoot, "src", "routes", "+layout.svelte")), true, "Expected SvelteKit layout");
+assert.equal(fs.existsSync(path.join(outputRoot, "src", "routes", "+page.svelte")), true, "Expected SvelteKit home page");
+assert.equal(fs.existsSync(path.join(outputRoot, "src", "lib", "topogram", "generation-coverage.json")), true, "Expected generation coverage artifact");
+const generatedPackage = JSON.parse(fs.readFileSync(path.join(outputRoot, "package.json"), "utf8"));
+assert.equal(generatedPackage.scripts.check, "svelte-kit sync && tsc --noEmit");
+assert.equal(generatedPackage.dependencies["@sveltejs/kit"], "^2.9.0");
 console.log("Package-backed @attebury/topogram-generator-sveltekit-web smoke passed.");
 
 function run(command, args, options = {}) { const result = childProcess.spawnSync(command, args, { cwd: options.cwd || root, encoding: "utf8", env: { ...process.env, npm_config_cache: npmCache, PATH: process.env.PATH || "" } }); if (result.status !== 0) throw new Error([ `Command failed: ${command} ${args.join(" ")}`, result.stdout, result.stderr ].filter(Boolean).join("\n")); if (!options.quiet && result.stdout) process.stdout.write(result.stdout); if (!options.quiet && result.stderr) process.stderr.write(result.stderr); return result; }
