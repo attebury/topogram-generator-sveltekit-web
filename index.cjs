@@ -261,8 +261,42 @@ small.route-hint { display: block; color: #607284; margin-top: 0.25rem; }
 }
 
 function renderVisibilityModule() {
-  return `export interface VisibilityRule { predicate?: string | null; }
-export function canShowAction(_rule: VisibilityRule | null | undefined) { return true; }
+  return `import { env as publicEnv } from "$env/dynamic/public";
+
+export interface VisibilityRule {
+  predicate?: string | null;
+  value?: string | null;
+  permission?: string | null;
+  ownershipField?: string | null;
+}
+export interface VisibilityDebug { userId?: string | null; permissions?: string | null; isAdmin?: string | boolean | null; }
+
+function truthy(value: unknown) {
+  return value === true || value === "true" || value === "1" || value === "yes";
+}
+
+function currentUser(debug?: VisibilityDebug | null) {
+  return debug?.userId || publicEnv.PUBLIC_TOPOGRAM_AUTH_USER_ID || "";
+}
+
+function currentPermissions(debug?: VisibilityDebug | null) {
+  return String(debug?.permissions || publicEnv.PUBLIC_TOPOGRAM_AUTH_PERMISSIONS || "").split(/[\\s,]+/).filter(Boolean);
+}
+
+function isAdmin(debug?: VisibilityDebug | null) {
+  return truthy(debug?.isAdmin) || truthy(publicEnv.PUBLIC_TOPOGRAM_AUTH_ADMIN) || currentPermissions(debug).includes("*");
+}
+
+export function canShowAction(rule: VisibilityRule | null | undefined, resource?: Record<string, unknown> | null, debug?: VisibilityDebug | null) {
+  if (!rule) return true;
+  if (rule.permission && !currentPermissions(debug).includes(rule.permission) && !currentPermissions(debug).includes("*")) return false;
+  if (rule.predicate === "ownership") {
+    if (rule.value === "owner_or_admin" && isAdmin(debug)) return true;
+    const field = rule.ownershipField || "owner_id";
+    return Boolean(currentUser(debug)) && String(resource?.[field] || "") === currentUser(debug);
+  }
+  return true;
+}
 `;
 }
 
