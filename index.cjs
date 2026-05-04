@@ -34,6 +34,10 @@ function contractRoutes(contract) {
   return routed.filter((route) => route.id && route.route);
 }
 
+function isNavigableRoute(route) {
+  return Boolean(route?.route) && !String(route.route).includes(":");
+}
+
 function statementsArray(graph) {
   if (Array.isArray(graph?.statements)) return graph.statements;
   return Object.values(graph?.statements || {});
@@ -403,6 +407,7 @@ function lookupDescriptor(lookup) {
 
 function renderLayout(brand, routes) {
   const nav = routes
+    .filter(isNavigableRoute)
     .map((route) => `    <a href="${route.route}">${route.title}</a>`)
     .join("\n");
   return `<script lang="ts">
@@ -454,8 +459,9 @@ ${nav}
 }
 
 function renderHomePage(contract, routes) {
+  const navigableRoutes = routes.filter(isNavigableRoute);
   return `<script lang="ts">
-  const screens = ${JSON.stringify(routes.map((route) => ({
+  const screens = ${JSON.stringify(navigableRoutes.map((route) => ({
     id: route.id,
     title: route.title,
     route: route.route
