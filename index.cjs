@@ -426,8 +426,7 @@ function renderScreenPage(route) {
 }
 
 function routeFileFor(route) {
-  const segment = routeSegment(route.route);
-  return segment ? `src/routes/${segment}/+page.svelte` : "src/routes/+page.svelte";
+  return routePagePath(route);
 }
 
 function routePagePath(screen) {
