@@ -49,6 +49,8 @@ assert.match(homePage, /class="component-card component-generic"/);
 const coverage = JSON.parse(fs.readFileSync(path.join(outputRoot, "src", "lib", "topogram", "generation-coverage.json"), "utf8"));
 assert.equal(coverage.summary.component_usages, 1);
 assert.equal(coverage.summary.rendered_component_usages, 1);
+assert.equal(coverage.screens[0].component_usages[0].pattern, "summary_stats");
+assert.equal(coverage.screens[0].component_usages[0].supported, true);
 assert.deepEqual(coverage.diagnostics, []);
 const generatedLayout = fs.readFileSync(path.join(outputRoot, "src", "routes", "+layout.svelte"), "utf8");
 assert.doesNotMatch(generatedLayout, /export let data/, "Layout should not export unused data");
@@ -84,6 +86,36 @@ assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+layout.svelte"], /task
 assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+layout.svelte"], /Edit Task/);
 assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+page.svelte"], /tasks\/:id/);
 assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+page.svelte"], /Edit Task/);
+assert.throws(
+  () => adapter.default.generate({
+    projection: { id: "proj_ui_web" },
+    contracts: {
+      uiWeb: {
+        projection: { id: "proj_ui_web", platform: "ui_web" },
+        appShell: { brand: "Unsupported Pattern" },
+        components: {
+          component_lookup: { patterns: ["lookup_select"] }
+        },
+        screens: [
+          {
+            id: "lookup_screen",
+            title: "Lookup",
+            route: "/lookup",
+            components: [
+              {
+                region: "results",
+                pattern: "lookup_select",
+                component: { id: "component_lookup", name: "Lookup" }
+              }
+            ]
+          }
+        ],
+        navigation: { items: [{ screenId: "lookup_screen", label: "Lookup", route: "/lookup" }] }
+      }
+    }
+  }),
+  /unsupported SvelteKit component pattern 'lookup_select'/
+);
 console.log("Package-backed @topogram/generator-sveltekit-web smoke passed.");
 
 function run(command, args, options = {}) { const result = childProcess.spawnSync(command, args, { cwd: options.cwd || root, encoding: "utf8", env: { ...process.env, npm_config_cache: npmCache, PATH: process.env.PATH || "" } }); if (result.status !== 0) throw new Error([ `Command failed: ${command} ${args.join(" ")}`, result.stdout, result.stderr ].filter(Boolean).join("\n")); if (!options.quiet && result.stdout) process.stdout.write(result.stdout); if (!options.quiet && result.stderr) process.stderr.write(result.stderr); return result; }
