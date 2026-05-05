@@ -137,6 +137,66 @@ function sampleItemsForScreen(screen) {
   ];
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function componentId(usage) {
+  return usage?.component?.id || "component";
+}
+
+function componentName(usage) {
+  return usage?.component?.name || usage?.component?.id || "Component";
+}
+
+function renderComponentUsage(usage) {
+  const id = escapeHtml(componentId(usage));
+  const name = escapeHtml(componentName(usage));
+  const region = escapeHtml(usage?.region || "region");
+  return [
+    '<section class="component-card component-generic" data-topogram-component="' + id + '">',
+    '  <p class="component-eyebrow">' + region + ' component</p>',
+    '  <h2>' + name + '</h2>',
+    '  <p class="muted">Rendered from the Topogram component contract.</p>',
+    '</section>'
+  ].join("\n");
+}
+
+function renderComponentSections(screen) {
+  return (screen?.components || []).map(renderComponentUsage).filter(Boolean).join("\n\n");
+}
+
+function renderSampleRowsSection() {
+  return [
+    '    <section class="card">',
+    '      <h2>Sample rows</h2>',
+    '      <ul class="resource-list">',
+    '        {#each items as item}',
+    '          <li>',
+    '            <div class="resource-meta">',
+    '              <strong>{item.title}</strong>',
+    '              <span class="muted">{item.description}</span>',
+    '            </div>',
+    '            <span class="badge">{item.status}</span>',
+    '          </li>',
+    '        {/each}',
+    '      </ul>',
+    '    </section>'
+  ].join("\n");
+}
+
+function componentUsageRecordsForScreen(screen) {
+  return (screen?.components || []).map((usage) => ({
+    component: componentId(usage),
+    region: usage?.region || null,
+    rendered: true
+  }));
+}
+
 function renderPackageJson(projectionId) {
   return `${JSON.stringify({
     name: projectionId,
@@ -258,7 +318,7 @@ button, .button-link { display: inline-flex; align-items: center; justify-conten
 .summary-grid, .board-grid, .calendar-list { display: grid; gap: 0.75rem; margin-top: 1rem; }
 .summary-grid { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); }
 .board-grid { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
-.summary-grid div, .board-column, .board-card, .calendar-list a { border: 1px solid #e0e8f1; border-radius: 12px; background: white; padding: 0.85rem; }
+.summary-grid div, .board-column, .board-card, .calendar-card { border: 1px solid #e0e8f1; border-radius: 12px; background: white; padding: 0.85rem; }
 small.route-hint { display: block; color: #607284; margin-top: 0.25rem; }
 @media (max-width: 640px) { .task-list li, .resource-list li { flex-direction: column; } .app-nav { flex-wrap: wrap; } }
 `;
@@ -504,6 +564,7 @@ function renderHomePage(contract, routes) {
 
 function renderScreenPage(route) {
   const items = sampleItemsForScreen(route.screen);
+  const sampleSection = renderComponentSections(route.screen) || renderSampleRowsSection();
   return `<script lang="ts">
   const items = ${JSON.stringify(items, null, 2)};
 </script>
@@ -516,20 +577,7 @@ function renderScreenPage(route) {
       <p>This SvelteKit page was generated from <code>${route.id}</code>.</p>
     </section>
 
-    <section class="card">
-      <h2>Sample rows</h2>
-      <ul class="resource-list">
-        {#each items as item}
-          <li>
-            <div class="resource-meta">
-              <strong>{item.title}</strong>
-              <span class="muted">{item.description}</span>
-            </div>
-            <span class="badge">{item.status}</span>
-          </li>
-        {/each}
-      </ul>
-    </section>
+    ${sampleSection}
   </div>
 </main>
 
@@ -537,10 +585,6 @@ function renderScreenPage(route) {
   main { max-width: 72rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
   .stack { display: grid; gap: 1rem; }
   .card { background: white; border-radius: 16px; padding: 1.25rem; box-shadow: 0 12px 30px rgba(24, 32, 38, 0.08); }
-  .resource-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.75rem; }
-  .resource-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1rem; border: 1px solid #e0e8f1; border-radius: 14px; background: #fbfcfe; }
-  .resource-meta { display: grid; gap: 0.35rem; }
-  .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 999px; background: #eef4ff; color: #0f5cc0; font-size: 0.85rem; font-weight: 600; }
   .muted { color: #607284; }
 </style>
 `;
@@ -566,9 +610,10 @@ function renderCoverage(contract, files, routes) {
       page,
       rendered: Boolean(files[page]),
       renderer: files[page] ? "generator" : "missing",
-      component_usages: []
+      component_usages: componentUsageRecordsForScreen(route.screen)
     };
   });
+  const usageCount = screens.reduce((total, screen) => total + screen.component_usages.length, 0);
   return {
     type: "generation_coverage",
     surface: "web",
@@ -583,8 +628,8 @@ function renderCoverage(contract, files, routes) {
       rendered_screens: screens.filter((screen) => screen.rendered).length,
       implementation_screens: 0,
       generator_screens: screens.filter((screen) => screen.renderer === "generator").length,
-      component_usages: 0,
-      rendered_component_usages: 0,
+      component_usages: usageCount,
+      rendered_component_usages: usageCount,
       diagnostics: 0,
       errors: 0,
       warnings: 0

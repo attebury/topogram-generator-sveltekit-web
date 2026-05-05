@@ -1,0 +1,13 @@
+component component_ui_hello_summary {
+  name "Hello Summary"
+  description "Reusable summary component for the hello starter"
+  category display
+
+  props {
+    rows array required
+  }
+
+  patterns [summary_stats]
+  regions [hero]
+  status active
+}

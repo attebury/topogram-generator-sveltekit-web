@@ -44,6 +44,13 @@ assert.equal(fs.existsSync(path.join(outputRoot, "svelte.config.js")), true, "Ex
 assert.equal(fs.existsSync(path.join(outputRoot, "src", "routes", "+layout.svelte")), true, "Expected SvelteKit layout");
 assert.equal(fs.existsSync(path.join(outputRoot, "src", "routes", "+page.svelte")), true, "Expected SvelteKit home page");
 assert.equal(fs.existsSync(path.join(outputRoot, "src", "lib", "topogram", "generation-coverage.json")), true, "Expected generation coverage artifact");
+const homePage = fs.readFileSync(path.join(outputRoot, "src", "routes", "+page.svelte"), "utf8");
+assert.match(homePage, /data-topogram-component="component_ui_hello_summary"/);
+assert.match(homePage, /class="component-card component-generic"/);
+const coverage = JSON.parse(fs.readFileSync(path.join(outputRoot, "src", "lib", "topogram", "generation-coverage.json"), "utf8"));
+assert.equal(coverage.summary.component_usages, 1);
+assert.equal(coverage.summary.rendered_component_usages, 1);
+assert.deepEqual(coverage.diagnostics, []);
 const generatedLayout = fs.readFileSync(path.join(outputRoot, "src", "routes", "+layout.svelte"), "utf8");
 assert.doesNotMatch(generatedLayout, /export let data/, "Layout should not export unused data");
 const generatedPackage = JSON.parse(fs.readFileSync(path.join(outputRoot, "package.json"), "utf8"));

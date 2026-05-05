@@ -26,5 +26,13 @@ projection proj_ui_shared {
     screen hello_workflow group hello label "Workflow" order 20 visible true sitemap include pattern primary
   }
 
+  ui_screen_regions {
+    screen hello_home region hero pattern summary_stats placement primary
+  }
+
+  ui_components {
+    screen hello_home region hero component component_ui_hello_summary data rows from cap_view_hello
+  }
+
   status active
 }
