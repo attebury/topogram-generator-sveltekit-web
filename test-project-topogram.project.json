@@ -13,9 +13,9 @@
         "type": "web",
         "projection": "proj_ui_web",
         "generator": {
-          "id": "@attebury/topogram-generator-sveltekit-web",
+          "id": "@topogram/generator-sveltekit-web",
           "version": "1",
-          "package": "@attebury/topogram-generator-sveltekit-web"
+          "package": "@topogram/generator-sveltekit-web"
         },
         "port": 5173
       }

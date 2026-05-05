@@ -1,5 +1,5 @@
 {
-  "id": "@attebury/topogram-generator-sveltekit-web",
+  "id": "@topogram/generator-sveltekit-web",
   "version": "1",
   "surface": "web",
   "targetKind": "web",
@@ -25,7 +25,7 @@
     "coverage": true
   },
   "source": "package",
-  "package": "@attebury/topogram-generator-sveltekit-web",
+  "package": "@topogram/generator-sveltekit-web",
   "componentSupport": {
     "patterns": [
       "summary_stats",
