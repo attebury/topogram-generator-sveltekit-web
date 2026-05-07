@@ -45,13 +45,13 @@ assert.equal(fs.existsSync(path.join(outputRoot, "src", "routes", "+layout.svelt
 assert.equal(fs.existsSync(path.join(outputRoot, "src", "routes", "+page.svelte")), true, "Expected SvelteKit home page");
 assert.equal(fs.existsSync(path.join(outputRoot, "src", "lib", "topogram", "generation-coverage.json")), true, "Expected generation coverage artifact");
 const homePage = fs.readFileSync(path.join(outputRoot, "src", "routes", "+page.svelte"), "utf8");
-assert.match(homePage, /data-topogram-component="component_ui_hello_summary"/);
-assert.match(homePage, /class="component-card component-generic"/);
+assert.match(homePage, /data-topogram-widget="widget_ui_hello_summary"/);
+assert.match(homePage, /class="widget-card widget-generic"/);
 const coverage = JSON.parse(fs.readFileSync(path.join(outputRoot, "src", "lib", "topogram", "generation-coverage.json"), "utf8"));
-assert.equal(coverage.summary.component_usages, 1);
-assert.equal(coverage.summary.rendered_component_usages, 1);
-assert.equal(coverage.screens[0].component_usages[0].pattern, "summary_stats");
-assert.equal(coverage.screens[0].component_usages[0].supported, true);
+assert.equal(coverage.summary.widget_usages, 1);
+assert.equal(coverage.summary.rendered_widget_usages, 1);
+assert.equal(coverage.screens[0].widget_usages[0].pattern, "summary_stats");
+assert.equal(coverage.screens[0].widget_usages[0].supported, true);
 assert.equal(coverage.design_intent.status, "mapped");
 assert.equal(coverage.design_intent.tokens.density, "compact");
 assert.equal(coverage.design_intent.tokens.color_roles.primary, "accent");
@@ -68,10 +68,10 @@ assert.equal(generatedPackage.dependencies["@sveltejs/kit"], "^2.9.0");
 assert.equal(generatedPackage.devDependencies["@types/node"], "^22.10.2");
 const adapter = await import(path.join(root, "index.cjs"));
 const dynamicRouteOutput = adapter.default.generate({
-  projection: { id: "proj_ui_web" },
+  projection: { id: "proj_web_surface" },
   contracts: {
-    uiWeb: {
-      projection: { id: "proj_ui_web" },
+    uiSurface: {
+      projection: { id: "proj_web_surface" },
       appShell: { brand: "Regression" },
       screens: [
         { id: "task_list", title: "Tasks", route: "/tasks" },
@@ -96,24 +96,24 @@ assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+page.svelte"], /tasks\
 assert.doesNotMatch(dynamicRouteOutput.files["src/routes/+page.svelte"], /Edit Task/);
 assert.throws(
   () => adapter.default.generate({
-    projection: { id: "proj_ui_web" },
+    projection: { id: "proj_web_surface" },
     contracts: {
-      uiWeb: {
-        projection: { id: "proj_ui_web", platform: "ui_web" },
+      uiSurface: {
+        projection: { id: "proj_web_surface", type: "web_surface" },
         appShell: { brand: "Unsupported Pattern" },
-        components: {
-          component_lookup: { patterns: ["lookup_select"] }
+        widgets: {
+          widget_lookup: { patterns: ["lookup_select"] }
         },
         screens: [
           {
             id: "lookup_screen",
             title: "Lookup",
             route: "/lookup",
-            components: [
+            widgets: [
               {
                 region: "results",
                 pattern: "lookup_select",
-                component: { id: "component_lookup", name: "Lookup" }
+                widget: { id: "widget_lookup", name: "Lookup" }
               }
             ]
           }
@@ -122,7 +122,7 @@ assert.throws(
       }
     }
   }),
-  /unsupported SvelteKit component pattern 'lookup_select'/
+  /unsupported SvelteKit widget pattern 'lookup_select'/
 );
 console.log("Package-backed @topogram/generator-sveltekit-web smoke passed.");
 

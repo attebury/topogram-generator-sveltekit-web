@@ -93,7 +93,7 @@ function requiredDesignMarkers(design) {
   ];
 }
 function buildDesignIntentCoverage(contract, files, cssPath) {
-  const design = normalizeDesignIntent(contract?.design);
+  const design = normalizeDesignIntent(contract?.designTokens);
   const css = files[cssPath] || "";
   const markers = requiredDesignMarkers(design);
   const mapped = markers.filter((item) => css.includes(item.marker));
@@ -170,7 +170,7 @@ function projectionCandidates(graph) {
 }
 
 function apiProjectionForContext(context) {
-  const topologyApiId = context.component?.apiComponent?.projection?.id || context.component?.apiProjectionId || null;
+  const topologyApiId = (context.runtime || context.component)?.apiComponent?.projection?.id || (context.runtime || context.component)?.apiProjectionId || null;
   const projections = projectionCandidates(context.graph || {});
   if (topologyApiId) {
     const match = projections.find((projection) => projection.id === topologyApiId && Array.isArray(projection.http));
@@ -265,11 +265,11 @@ function escapeHtml(value) {
 }
 
 function componentId(usage) {
-  return usage?.component?.id || "component";
+  return usage?.widget?.id || "widget";
 }
 
 function componentName(usage) {
-  return usage?.component?.name || usage?.component?.id || "Component";
+  return usage?.widget?.name || usage?.widget?.id || "Widget";
 }
 
 function componentContractFor(usage, componentContracts) {
@@ -289,7 +289,7 @@ function componentUsageSupport(usage, componentContracts) {
   const pattern = componentUsagePattern(usage, componentContracts);
   return {
     pattern,
-    supported: (manifest.componentSupport?.patterns || []).includes(pattern || "")
+    supported: (manifest.widgetSupport?.patterns || []).includes(pattern || "")
   };
 }
 
@@ -298,16 +298,16 @@ function renderComponentUsage(usage) {
   const name = escapeHtml(componentName(usage));
   const region = escapeHtml(usage?.region || "region");
   return [
-    '<section class="component-card component-generic" data-topogram-component="' + id + '">',
-    '  <p class="component-eyebrow">' + region + ' component</p>',
+    '<section class="widget-card widget-generic" data-topogram-widget="' + id + '">',
+    '  <p class="widget-eyebrow">' + region + ' widget</p>',
     '  <h2>' + name + '</h2>',
-    '  <p class="muted">Rendered from the Topogram component contract.</p>',
+    '  <p class="muted">Rendered from the Topogram widget contract.</p>',
     '</section>'
   ].join("\n");
 }
 
 function renderComponentSections(screen) {
-  return (screen?.components || []).map(renderComponentUsage).filter(Boolean).join("\n\n");
+  return (screen?.widgets || []).map(renderComponentUsage).filter(Boolean).join("\n\n");
 }
 
 function renderSampleRowsSection() {
@@ -330,24 +330,24 @@ function renderSampleRowsSection() {
 }
 
 function componentUsageRecordsForScreen(screen, componentContracts, diagnostics) {
-  return (screen?.components || []).map((usage) => {
-    const component = componentId(usage);
+  return (screen?.widgets || []).map((usage) => {
+    const widget = componentId(usage);
     const support = componentUsageSupport(usage, componentContracts);
     if (!support.supported) {
       diagnostics.push({
-        code: "component_pattern_not_supported",
+        code: "widget_pattern_not_supported",
         severity: "error",
         screen: screen?.id || null,
         route: screen?.route || null,
         region: usage?.region || null,
         pattern: support.pattern || null,
-        component,
-        message: `Screen '${screen?.id || "unknown"}' uses component '${component}' with unsupported SvelteKit component pattern '${support.pattern || "(missing)"}'.`,
-        suggested_fix: "Use a supported component pattern for this generator or provide an implementation override."
+        widget,
+        message: `Screen '${screen?.id || "unknown"}' uses widget '${widget}' with unsupported SvelteKit widget pattern '${support.pattern || "(missing)"}'.`,
+        suggested_fix: "Use a supported widget pattern for this generator or provide an implementation override."
       });
     }
     return {
-      component,
+      widget,
       region: usage?.region || null,
       pattern: support.pattern || null,
       supported: support.supported,
@@ -465,7 +465,7 @@ button, .button-link { display: inline-flex; align-items: center; justify-conten
 .task-list, .resource-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.75rem; }
 .task-list li, .resource-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1rem; border: 1px solid #e0e8f1; border-radius: 14px; background: #fbfcfe; }
 .resource-meta, .task-meta, .definition-list { display: grid; gap: 0.5rem; }
-.table-wrap, .component-table-wrap { margin-top: 1rem; overflow-x: auto; border: 1px solid #d7e1ec; border-radius: 14px; background: white; }
+.table-wrap, .widget-table-wrap { margin-top: 1rem; overflow-x: auto; border: 1px solid #d7e1ec; border-radius: 14px; background: white; }
 .resource-table { width: 100%; border-collapse: collapse; min-width: 42rem; }
 .resource-table th, .resource-table td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid #e7edf5; vertical-align: top; }
 .resource-table th { font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; color: #516173; background: #f8fbff; }
@@ -473,9 +473,9 @@ button, .button-link { display: inline-flex; align-items: center; justify-conten
 .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 999px; background: #eef4ff; color: #0f5cc0; font-size: 0.85rem; font-weight: 600; }
 .muted { color: var(--topogram-muted-color); }
 .empty-state { padding: 1rem 0; }
-.component-card { border: 1px solid #d7e1ec; border-radius: 14px; background: #fbfcfe; padding: 1rem; margin-top: 1rem; }
-.component-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.component-eyebrow { margin: 0 0 0.25rem; color: #607284; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.widget-card { border: 1px solid #d7e1ec; border-radius: 14px; background: #fbfcfe; padding: 1rem; margin-top: 1rem; }
+.widget-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.widget-eyebrow { margin: 0 0 0.25rem; color: #607284; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .summary-grid, .board-grid, .calendar-list { display: grid; gap: 0.75rem; margin-top: 1rem; }
 .summary-grid { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); }
 .board-grid { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
@@ -770,7 +770,7 @@ function renderCoverage(contract, files, routes) {
   const diagnostics = [];
   const designIntent = buildDesignIntentCoverage(contract, files, "src/app.css");
   diagnostics.push(...designIntent.diagnostics);
-  const componentContracts = contract.components || {};
+  const componentContracts = contract.widgets || {};
   const screens = routes.map((route) => {
     const page = routeFileFor(route);
     return {
@@ -779,10 +779,10 @@ function renderCoverage(contract, files, routes) {
       page,
       rendered: Boolean(files[page]),
       renderer: files[page] ? "generator" : "missing",
-      component_usages: componentUsageRecordsForScreen(route.screen, componentContracts, diagnostics)
+      widget_usages: componentUsageRecordsForScreen(route.screen, componentContracts, diagnostics)
     };
   });
-  const usageCount = screens.reduce((total, screen) => total + screen.component_usages.length, 0);
+  const usageCount = screens.reduce((total, screen) => total + screen.widget_usages.length, 0);
   const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
   const warningCount = diagnostics.filter((diagnostic) => diagnostic.severity === "warning").length;
   return {
@@ -792,15 +792,15 @@ function renderCoverage(contract, files, routes) {
     projection: {
       id: contract.projection?.id,
       name: contract.projection?.name,
-      platform: contract.projection?.platform
+      type: contract.projection?.type
     },
     summary: {
       routed_screens: screens.length,
       rendered_screens: screens.filter((screen) => screen.rendered).length,
       implementation_screens: 0,
       generator_screens: screens.filter((screen) => screen.renderer === "generator").length,
-      component_usages: usageCount,
-      rendered_component_usages: screens.reduce((total, screen) => total + screen.component_usages.filter((usage) => usage.rendered).length, 0),
+      widget_usages: usageCount,
+      rendered_widget_usages: screens.reduce((total, screen) => total + screen.widget_usages.filter((usage) => usage.rendered).length, 0),
       diagnostics: diagnostics.length,
       errors: errorCount,
       warnings: warningCount
@@ -821,12 +821,12 @@ function assertGenerationCoverage(coverage) {
 }
 
 function generate(context) {
-  const contract = context.contracts?.uiWeb;
+  const contract = context.contracts?.uiSurface;
   if (!contract) {
-    throw new Error("@topogram/generator-sveltekit-web requires contracts.uiWeb.");
+    throw new Error("@topogram/generator-sveltekit-web requires contracts.uiSurface.");
   }
   const routes = contractRoutes(contract);
-  const projectionId = contract.projection?.id || context.projection?.id || "proj_ui_web";
+  const projectionId = contract.projection?.id || context.projection?.id || "proj_web_surface";
   const implementation = context.implementation || {};
   const webImplementation = implementation.web || {};
   const webReference = webImplementation.reference || {};
@@ -841,12 +841,12 @@ function generate(context) {
     "vite.config.ts": renderViteConfig(),
     "tsconfig.json": renderTsconfig(),
     "src/app.html": renderAppHtml(),
-    "src/app.css": renderAppCss(contract.design),
+    "src/app.css": renderAppCss(contract.designTokens),
     "src/app.d.ts": "declare global { namespace App {} }\n\nexport {};\n",
     "src/routes/+layout.svelte": renderLayout(brand, routes),
     "src/routes/+page.svelte": renderHomePage(contract, routes),
     "src/lib/topogram/api-contracts.json": `${JSON.stringify(apiContractsForContext(context), null, 2)}\n`,
-    "src/lib/topogram/ui-web-contract.json": `${JSON.stringify(contract, null, 2)}\n`
+    "src/lib/topogram/ui-surface-contract.json": `${JSON.stringify(contract, null, 2)}\n`
   };
   if (hasImplementationRoutes) {
     files["src/routes/+page.svelte"] = webRenderers.renderHomePage({

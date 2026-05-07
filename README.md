@@ -6,7 +6,7 @@ Package-backed Topogram generator for SvelteKit web apps.
 
 - Generator id: `@topogram/generator-sveltekit-web`
 - Surface: `web`
-- Projection platform: `ui_web`
+- Projection type: `web_surface`
 - Package manifest: `topogram-generator.json`
 - Adapter export: `index.cjs`
 

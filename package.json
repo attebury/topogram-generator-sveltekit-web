@@ -1,13 +1,13 @@
 {
   "name": "@topogram/generator-sveltekit-web",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Package-backed Topogram generator for SvelteKit web apps.",
   "license": "UNLICENSED",
   "private": false,
   "type": "commonjs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/attebury/topogram-generator-sveltekit-web"
+    "url": "git+https://github.com/attebury/topogram-generator-sveltekit-web.git"
   },
   "main": "index.cjs",
   "files": [
@@ -24,6 +24,6 @@
     "access": "public"
   },
   "devDependencies": {
-    "@topogram/cli": "^0.3.51"
+    "@topogram/cli": "^0.3.52"
   }
 }

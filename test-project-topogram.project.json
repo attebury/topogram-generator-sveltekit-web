@@ -7,17 +7,17 @@
     }
   },
   "topology": {
-    "components": [
+    "runtimes": [
       {
         "id": "app_sveltekit",
-        "type": "web",
-        "projection": "proj_ui_web",
+        "projection": "proj_web_surface",
         "generator": {
           "id": "@topogram/generator-sveltekit-web",
           "version": "1",
           "package": "@topogram/generator-sveltekit-web"
         },
-        "port": 5173
+        "port": 5173,
+        "kind": "web_surface"
       }
     ]
   }

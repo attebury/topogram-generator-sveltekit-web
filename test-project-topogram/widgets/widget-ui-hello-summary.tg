@@ -1,6 +1,6 @@
-component component_ui_hello_summary {
+widget widget_ui_hello_summary {
   name "Hello Summary"
-  description "Reusable summary component for the hello starter"
+  description "Reusable summary widget for the hello starter"
   category display
 
   props {
