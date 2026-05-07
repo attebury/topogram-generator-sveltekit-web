@@ -1,6 +1,6 @@
 {
   "name": "@topogram/generator-sveltekit-web",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Package-backed Topogram generator for SvelteKit web apps.",
   "license": "UNLICENSED",
   "private": false,
