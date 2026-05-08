@@ -52,6 +52,7 @@ assert.equal(coverage.summary.widget_usages, 1);
 assert.equal(coverage.summary.rendered_widget_usages, 1);
 assert.equal(coverage.screens[0].widget_usages[0].pattern, "summary_stats");
 assert.equal(coverage.screens[0].widget_usages[0].supported, true);
+assert.equal(coverage.screens[0].widget_usages[0].status, "rendered");
 assert.equal(coverage.design_intent.status, "mapped");
 assert.equal(coverage.design_intent.tokens.density, "compact");
 assert.equal(coverage.design_intent.tokens.color_roles.primary, "accent");
