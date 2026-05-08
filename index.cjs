@@ -170,7 +170,8 @@ function projectionCandidates(graph) {
 }
 
 function apiProjectionForContext(context) {
-  const topologyApiId = (context.runtime || context.component)?.apiComponent?.projection?.id || (context.runtime || context.component)?.apiProjectionId || null;
+  const runtime = context.runtime || {};
+  const topologyApiId = runtime.apiComponent?.projection?.id || runtime.apiProjectionId || null;
   const projections = projectionCandidates(context.graph || {});
   if (topologyApiId) {
     const match = projections.find((projection) => projection.id === topologyApiId && Array.isArray(projection.http));
@@ -264,38 +265,38 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
-function componentId(usage) {
+function widgetId(usage) {
   return usage?.widget?.id || "widget";
 }
 
-function componentName(usage) {
+function widgetName(usage) {
   return usage?.widget?.name || usage?.widget?.id || "Widget";
 }
 
-function componentContractFor(usage, componentContracts) {
-  const id = componentId(usage);
-  return componentContracts?.[id] || {};
+function widgetContractFor(usage, widgetContracts) {
+  const id = widgetId(usage);
+  return widgetContracts?.[id] || {};
 }
 
-function componentPatterns(usage, componentContracts) {
-  return componentContractFor(usage, componentContracts).patterns || [];
+function widgetPatterns(usage, widgetContracts) {
+  return widgetContractFor(usage, widgetContracts).patterns || [];
 }
 
-function componentUsagePattern(usage, componentContracts) {
-  return usage?.pattern || componentPatterns(usage, componentContracts)[0] || null;
+function widgetUsagePattern(usage, widgetContracts) {
+  return usage?.pattern || widgetPatterns(usage, widgetContracts)[0] || null;
 }
 
-function componentUsageSupport(usage, componentContracts) {
-  const pattern = componentUsagePattern(usage, componentContracts);
+function widgetUsageSupport(usage, widgetContracts) {
+  const pattern = widgetUsagePattern(usage, widgetContracts);
   return {
     pattern,
     supported: (manifest.widgetSupport?.patterns || []).includes(pattern || "")
   };
 }
 
-function renderComponentUsage(usage) {
-  const id = escapeHtml(componentId(usage));
-  const name = escapeHtml(componentName(usage));
+function renderWidgetUsage(usage) {
+  const id = escapeHtml(widgetId(usage));
+  const name = escapeHtml(widgetName(usage));
   const region = escapeHtml(usage?.region || "region");
   return [
     '<section class="widget-card widget-generic" data-topogram-widget="' + id + '">',
@@ -306,8 +307,8 @@ function renderComponentUsage(usage) {
   ].join("\n");
 }
 
-function renderComponentSections(screen) {
-  return (screen?.widgets || []).map(renderComponentUsage).filter(Boolean).join("\n\n");
+function renderWidgetSections(screen) {
+  return (screen?.widgets || []).map(renderWidgetUsage).filter(Boolean).join("\n\n");
 }
 
 function renderSampleRowsSection() {
@@ -329,10 +330,10 @@ function renderSampleRowsSection() {
   ].join("\n");
 }
 
-function componentUsageRecordsForScreen(screen, componentContracts, diagnostics) {
+function widgetUsageRecordsForScreen(screen, widgetContracts, diagnostics) {
   return (screen?.widgets || []).map((usage) => {
-    const widget = componentId(usage);
-    const support = componentUsageSupport(usage, componentContracts);
+    const widget = widgetId(usage);
+    const support = widgetUsageSupport(usage, widgetContracts);
     if (!support.supported) {
       diagnostics.push({
         code: "widget_pattern_not_supported",
@@ -729,7 +730,7 @@ function renderHomePage(contract, routes) {
 
 function renderScreenPage(route) {
   const items = sampleItemsForScreen(route.screen);
-  const sampleSection = renderComponentSections(route.screen) || renderSampleRowsSection();
+  const sampleSection = renderWidgetSections(route.screen) || renderSampleRowsSection();
   return `<script lang="ts">
   const items = ${JSON.stringify(items, null, 2)};
 </script>
@@ -770,7 +771,7 @@ function renderCoverage(contract, files, routes) {
   const diagnostics = [];
   const designIntent = buildDesignIntentCoverage(contract, files, "src/app.css");
   diagnostics.push(...designIntent.diagnostics);
-  const componentContracts = contract.widgets || {};
+  const widgetContracts = contract.widgets || {};
   const screens = routes.map((route) => {
     const page = routeFileFor(route);
     return {
@@ -779,7 +780,7 @@ function renderCoverage(contract, files, routes) {
       page,
       rendered: Boolean(files[page]),
       renderer: files[page] ? "generator" : "missing",
-      widget_usages: componentUsageRecordsForScreen(route.screen, componentContracts, diagnostics)
+      widget_usages: widgetUsageRecordsForScreen(route.screen, widgetContracts, diagnostics)
     };
   });
   const usageCount = screens.reduce((total, screen) => total + screen.widget_usages.length, 0);
