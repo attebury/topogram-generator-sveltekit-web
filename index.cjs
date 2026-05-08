@@ -171,7 +171,8 @@ function projectionCandidates(graph) {
 
 function apiProjectionForContext(context) {
   const runtime = context.runtime || {};
-  const topologyApiId = runtime.apiComponent?.projection?.id || runtime.apiProjectionId || null;
+  const apiRuntime = runtime.apiRuntime || runtime.apiComponent || null;
+  const topologyApiId = apiRuntime?.projection?.id || runtime.apiProjectionId || null;
   const projections = projectionCandidates(context.graph || {});
   if (topologyApiId) {
     const match = projections.find((projection) => projection.id === topologyApiId && Array.isArray(projection.http));
