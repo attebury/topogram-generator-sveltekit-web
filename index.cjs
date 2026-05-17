@@ -246,14 +246,22 @@ function sampleItemsForScreen(screen) {
       title: `${title} sample`,
       message: `${title} sample`,
       description: "Generated from Topogram UI contract metadata.",
-      category: "sample"
+      category: "sample",
+      priority: "medium",
+      status: "active",
+      dueAt: "2026-01-01",
+      ownerId: "sample-owner"
     },
     {
       id: "sample-completed",
       title: `${title} completed sample`,
       message: `${title} completed sample`,
       description: "Second generated row for rendering checks.",
-      category: "sample"
+      category: "sample",
+      priority: "low",
+      status: "complete",
+      dueAt: "2026-01-02",
+      ownerId: "sample-owner"
     }
   ];
 }
@@ -295,12 +303,170 @@ function widgetUsageSupport(usage, widgetContracts) {
   };
 }
 
-function renderWidgetUsage(usage) {
+function displayFields(usage) {
+  const fields = Array.isArray(usage?.displayFields) ? usage.displayFields : usage?.display?.fields || [];
+  return fields.filter((field) => field?.name);
+}
+
+function displayFieldsLiteral(usage) {
+  return JSON.stringify(displayFields(usage).map((field) => ({
+    name: field.name,
+    label: field.label || field.name,
+    role: field.role || "metadata"
+  })));
+}
+
+function fieldNameByRole(usage, roles, fallback) {
+  const fields = displayFields(usage);
+  const match = fields.find((field) => roles.includes(field.role || ""));
+  return match?.name || fields[0]?.name || fallback;
+}
+
+function widgetAttrs(usage, screen) {
+  return [
+    `data-topogram-widget="${escapeHtml(widgetId(usage))}"`,
+    `data-topogram-region="${escapeHtml(usage?.region || "")}"`,
+    `data-topogram-screen="${escapeHtml(screen?.id || "")}"`
+  ].join(" ");
+}
+
+function renderSummaryStats(usage, screen) {
+  const fields = displayFieldsLiteral(usage);
+  return `<section class="widget-card widget-summary" ${widgetAttrs(usage, screen)}>
+      <div class="widget-header">
+        <div>
+          <p class="widget-eyebrow">Widget</p>
+          <h2>${escapeHtml(widgetName(usage))}</h2>
+        </div>
+      </div>
+      <dl class="widget-field-list">
+        {#each ${fields} as field}
+          <div>
+            <dt>{field.label}</dt>
+            <dd data-topogram-display-field={field.name}>{String(items[0]?.[field.name] ?? "")}</dd>
+          </div>
+        {/each}
+      </dl>
+      <div class="summary-grid">
+        <div><strong>{items.length}</strong><span>Total</span></div>
+        <div><strong>${displayFields(usage).length}</strong><span>Fields</span></div>
+        <div><strong>{items.filter((item) => item && (item.id ?? item.uuid ?? item.key)).length}</strong><span>Identified</span></div>
+      </div>
+    </section>`;
+}
+
+function renderCollectionTable(usage, screen) {
+  const fields = displayFieldsLiteral(usage);
+  return `<div class="widget-card widget-table" ${widgetAttrs(usage, screen)}>
+      <div class="widget-header">
+        <div>
+          <p class="widget-eyebrow">Widget</p>
+          <h2>${escapeHtml(widgetName(usage))}</h2>
+        </div>
+        <span class="badge">{items.length} items</span>
+      </div>
+      <div class="table-wrap widget-table-wrap">
+        <table class="resource-table data-grid">
+          <thead>
+            <tr>
+              {#each ${fields} as field}
+                <th data-topogram-display-field={field.name}>{field.label}</th>
+              {/each}
+            </tr>
+          </thead>
+          <tbody>
+            {#each items as item}
+              <tr>
+                {#each ${fields} as field}
+                  <td data-topogram-display-field={field.name}>{String(item?.[field.name] ?? "")}</td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function renderBoard(usage, screen) {
+  const fields = displayFieldsLiteral(usage);
+  const groupFieldName = fieldNameByRole(usage, ["status", "priority", "metadata"], "status");
+  const titleFieldName = fieldNameByRole(usage, ["primary", "identifier"], "title");
+  const groupField = JSON.stringify(groupFieldName);
+  const titleField = JSON.stringify(titleFieldName);
+  return `<div class="widget-card widget-board" ${widgetAttrs(usage, screen)}>
+      <div class="widget-header">
+        <div>
+          <p class="widget-eyebrow">Widget</p>
+          <h2>${escapeHtml(widgetName(usage))}</h2>
+        </div>
+      </div>
+      <div class="board-grid">
+        {#each Array.from(new Set(items.map((item) => item?.[${groupField}] ?? "items"))) as group}
+          <section class="board-column">
+            <h3>{group}</h3>
+            {#each items.filter((item) => (item?.[${groupField}] ?? "items") === group) as item}
+              <div class="board-card">
+                <strong data-topogram-display-field="${escapeHtml(titleFieldName)}">{item?.[${titleField}] ?? item.title ?? item.name ?? item.label ?? item.message ?? item.id ?? JSON.stringify(item)}</strong>
+                <dl class="widget-field-list">
+                  {#each ${fields} as field}
+                    <div>
+                      <dt>{field.label}</dt>
+                      <dd data-topogram-display-field={field.name}>{String(item?.[field.name] ?? "")}</dd>
+                    </div>
+                  {/each}
+                </dl>
+              </div>
+            {/each}
+          </section>
+        {/each}
+      </div>
+    </div>`;
+}
+
+function renderCalendar(usage, screen) {
+  const fields = displayFieldsLiteral(usage);
+  const dateFieldName = fieldNameByRole(usage, ["date"], "dueAt");
+  const titleFieldName = fieldNameByRole(usage, ["primary", "identifier"], "title");
+  const dateField = JSON.stringify(dateFieldName);
+  const titleField = JSON.stringify(titleFieldName);
+  return `<div class="widget-card widget-calendar" ${widgetAttrs(usage, screen)}>
+      <div class="widget-header">
+        <div>
+          <p class="widget-eyebrow">Widget</p>
+          <h2>${escapeHtml(widgetName(usage))}</h2>
+        </div>
+      </div>
+      <div class="calendar-list">
+        {#each items.filter((item) => item?.[${dateField}]) as item}
+          <div class="calendar-card">
+            <span data-topogram-display-field="${escapeHtml(dateFieldName)}">{item?.[${dateField}]}</span>
+            <strong data-topogram-display-field="${escapeHtml(titleFieldName)}">{item?.[${titleField}] ?? item.title ?? item.name ?? item.label ?? item.message ?? item.id ?? JSON.stringify(item)}</strong>
+            <dl class="widget-field-list">
+              {#each ${fields} as field}
+                <div>
+                  <dt>{field.label}</dt>
+                  <dd data-topogram-display-field={field.name}>{String(item?.[field.name] ?? "")}</dd>
+                </div>
+              {/each}
+            </dl>
+          </div>
+        {/each}
+      </div>
+    </div>`;
+}
+
+function renderWidgetUsage(usage, screen, widgetContracts) {
+  const pattern = widgetUsageSupport(usage, widgetContracts).pattern;
+  if (pattern === "summary_stats") return renderSummaryStats(usage, screen);
+  if (pattern === "board_view") return renderBoard(usage, screen);
+  if (pattern === "calendar_view") return renderCalendar(usage, screen);
+  if (pattern === "resource_table" || pattern === "data_grid_view") return renderCollectionTable(usage, screen);
   const id = escapeHtml(widgetId(usage));
   const name = escapeHtml(widgetName(usage));
   const region = escapeHtml(usage?.region || "region");
   return [
-    '<section class="widget-card widget-generic" data-topogram-widget="' + id + '">',
+    '<section class="widget-card widget-generic" ' + widgetAttrs(usage, screen) + '>',
     '  <p class="widget-eyebrow">' + region + ' widget</p>',
     '  <h2>' + name + '</h2>',
     '  <p class="muted">Rendered from the Topogram widget contract.</p>',
@@ -308,8 +474,8 @@ function renderWidgetUsage(usage) {
   ].join("\n");
 }
 
-function renderWidgetSections(screen) {
-  return (screen?.widgets || []).map(renderWidgetUsage).filter(Boolean).join("\n\n");
+function renderWidgetSections(screen, widgetContracts) {
+  return (screen?.widgets || []).map((usage) => renderWidgetUsage(usage, screen, widgetContracts)).filter(Boolean).join("\n\n");
 }
 
 function renderSampleRowsSection() {
@@ -331,11 +497,24 @@ function renderSampleRowsSection() {
   ].join("\n");
 }
 
-function widgetUsageRecordsForScreen(screen, widgetContracts, diagnostics) {
+function widgetUsageRecordsForScreen(screen, widgetContracts, diagnostics, contents) {
   return (screen?.widgets || []).map((usage) => {
     const widget = widgetId(usage);
     const support = widgetUsageSupport(usage, widgetContracts);
     const status = support.supported ? "rendered" : "unsupported";
+    const fields = displayFields(usage);
+    const displayFieldMarkers = fields.map((field) => ({
+      name: field.name,
+      label: field.label || field.name,
+      role: field.role || "metadata",
+      rendered: Boolean(contents && contents.includes(`"name":"${field.name}"`) && contents.includes("data-topogram-display-field"))
+    }));
+    const displayFieldsRendered = fields.length > 0 && displayFieldMarkers.every((field) => field.rendered);
+    const actualMarkers = {
+      widget: Boolean(contents && contents.includes(`data-topogram-widget="${widget}"`)),
+      region: Boolean(contents && contents.includes(`data-topogram-region="${usage?.region || ""}"`)),
+      screen: Boolean(contents && contents.includes(`data-topogram-screen="${screen?.id || ""}"`))
+    };
     if (!support.supported) {
       diagnostics.push({
         code: "widget_pattern_not_supported",
@@ -349,13 +528,51 @@ function widgetUsageRecordsForScreen(screen, widgetContracts, diagnostics) {
         suggested_fix: "Use a supported widget pattern for this generator or provide an implementation override."
       });
     }
+    if (support.supported && fields.length === 0) {
+      diagnostics.push({
+        code: "widget_display_fields_unresolved",
+        severity: "error",
+        screen: screen?.id || null,
+        route: screen?.route || null,
+        region: usage?.region || null,
+        pattern: support.pattern || null,
+        widget,
+        message: `Screen '${screen?.id || "unknown"}' uses widget '${widget}' but no contract display fields were resolved.`,
+        suggested_fix: "Bind widget data to a capability with an output shape or add screen item/view/input shape metadata."
+      });
+    }
+    if (support.supported && fields.length > 0 && !displayFieldsRendered) {
+      diagnostics.push({
+        code: "widget_display_fields_not_rendered",
+        severity: "error",
+        screen: screen?.id || null,
+        route: screen?.route || null,
+        region: usage?.region || null,
+        pattern: support.pattern || null,
+        widget,
+        message: `Screen '${screen?.id || "unknown"}' uses widget '${widget}' but the generated SvelteKit page does not render the contract display fields.`,
+        suggested_fix: "Render widget rows from usage.displayFields and preserve data-topogram-display-field markers."
+      });
+    }
     return {
       widget,
       region: usage?.region || null,
       pattern: support.pattern || null,
       supported: support.supported,
       status,
-      rendered: true
+      rendered: actualMarkers.widget && actualMarkers.region && actualMarkers.screen,
+      markers: {
+        expected: {
+          widget: `data-topogram-widget="${widget}"`,
+          region: `data-topogram-region="${usage?.region || ""}"`,
+          screen: `data-topogram-screen="${screen?.id || ""}"`
+        },
+        actual: actualMarkers
+      },
+      display: usage.display || null,
+      display_fields: displayFieldMarkers,
+      display_fields_rendered: displayFieldsRendered,
+      behavior_realizations: usage.behaviorRealizations || []
     };
   });
 }
@@ -484,6 +701,10 @@ button, .button-link { display: inline-flex; align-items: center; justify-conten
 .summary-grid { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); }
 .board-grid { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
 .summary-grid div, .board-column, .board-card, .calendar-card { border: 1px solid #e0e8f1; border-radius: 12px; background: white; padding: 0.85rem; }
+.widget-field-list { display: grid; gap: 0.35rem; margin: 0.75rem 0 0; }
+.widget-field-list div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.75rem; align-items: baseline; }
+.widget-field-list dt { color: #607284; font-size: 0.8rem; font-weight: 700; }
+.widget-field-list dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 small.route-hint { display: block; color: #607284; margin-top: 0.25rem; }
 @media (max-width: 640px) { .task-list li, .resource-list li { flex-direction: column; } .app-nav { flex-wrap: wrap; } }
 `;
@@ -733,7 +954,7 @@ function renderHomePage(contract, routes) {
 
 function renderScreenPage(route) {
   const items = sampleItemsForScreen(route.screen);
-  const sampleSection = renderWidgetSections(route.screen) || renderSampleRowsSection();
+  const sampleSection = renderWidgetSections(route.screen, route.contract?.widgets || {}) || renderSampleRowsSection();
   return `<script lang="ts">
   const items = ${JSON.stringify(items, null, 2)};
 </script>
@@ -783,7 +1004,7 @@ function renderCoverage(contract, files, routes) {
       page,
       rendered: Boolean(files[page]),
       renderer: files[page] ? "generator" : "missing",
-      widget_usages: widgetUsageRecordsForScreen(route.screen, widgetContracts, diagnostics)
+      widget_usages: widgetUsageRecordsForScreen(route.screen, widgetContracts, diagnostics, files[page] || "")
     };
   });
   const usageCount = screens.reduce((total, screen) => total + screen.widget_usages.length, 0);
@@ -805,6 +1026,7 @@ function renderCoverage(contract, files, routes) {
       generator_screens: screens.filter((screen) => screen.renderer === "generator").length,
       widget_usages: usageCount,
       rendered_widget_usages: screens.reduce((total, screen) => total + screen.widget_usages.filter((usage) => usage.rendered).length, 0),
+      display_field_widget_usages: screens.reduce((total, screen) => total + screen.widget_usages.filter((usage) => usage.display_fields_rendered).length, 0),
       diagnostics: diagnostics.length,
       errors: errorCount,
       warnings: warningCount
@@ -871,7 +1093,7 @@ function generate(context) {
     files["src/lib/api/lookups.ts"] = renderLookupModule(`http://localhost:${runtimeReference.ports?.server || 3000}`);
   }
   for (const route of routes) {
-    files[routeFileFor(route)] = renderScreenPage(route);
+    files[routeFileFor(route)] = renderScreenPage({ ...route, contract });
   }
   if (hasImplementationRoutes) {
     const byId = new Map((contract.screens || []).map((screen) => [screen.id, screen]));
